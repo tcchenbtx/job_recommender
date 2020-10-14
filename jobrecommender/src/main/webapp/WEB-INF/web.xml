@@ -4,4 +4,14 @@
 
 <web-app>
   <display-name>Archetype Created Web Application</display-name>
+  <servlet>
+  	<servlet-name>search</servlet-name>
+  	<display-name>search</display-name>
+  	<description></description>
+  	<servlet-class>rpc.SearchItem</servlet-class>
+  </servlet>
+  <servlet-mapping>
+  	<servlet-name>search</servlet-name>
+  	<url-pattern>/search</url-pattern>
+  </servlet-mapping>
 </web-app>
