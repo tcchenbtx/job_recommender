@@ -10,8 +10,18 @@
   	<description></description>
   	<servlet-class>rpc.SearchItem</servlet-class>
   </servlet>
+  <servlet>
+  	<servlet-name>history</servlet-name>
+  	<display-name>history</display-name>
+  	<description></description>
+  	<servlet-class>rpc.ItemHistory</servlet-class>
+  </servlet>
   <servlet-mapping>
   	<servlet-name>search</servlet-name>
   	<url-pattern>/search</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+  	<servlet-name>history</servlet-name>
+  	<url-pattern>/history</url-pattern>
   </servlet-mapping>
 </web-app>
