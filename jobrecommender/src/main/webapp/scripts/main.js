@@ -1,7 +1,6 @@
 (function() {
 
 	// event handlers
-
 	function int() {
 		// add event listener
 		document.querySelector('#login-form-btn').addEventListener('click', onSessionInvalid);
@@ -11,8 +10,7 @@
 		document.querySelector('#nearby-btn').addEventListener('click', loadNearbyItems);
 		document.querySelector('#fav-btn').addEventListener('click', loadFavoriteItems);
 		document.querySelector('#recommend-btn').addEventListener('click', loadRecommendedItems);
-
-
+		validateSession();
 	}
 
 	// global helper functions
@@ -309,6 +307,217 @@
 		);
 	}
 
+	// changeFavoriteItem
+	function changeFavoriteItem(item) {
+		// check whether this item has been visited or not
+		var li = document.querySelector('#item-' + item.item_id);
+		var favIcon = document.querySelector('#fav-icon-' + item.item_id);
+		var favorite = !(li.dataset.favorite === 'true');
 
+		// request parameters
+		var url = './history';
+		var req = JSON.stringify({
+			user_id: user_id,
+			favorite: item
+		});
+		var method = favorite ? 'POST' : 'DELETE';
 
+		ajax(method, url, req,
+			// successful callback
+			function(res) {
+				var result = JSON.parse(res);
+				if (result.status === 'OK' || result.result === 'SUCCESS') {
+					li.dataset.favorite = favorite;
+					favIcon.className = favorite ? 'fa fa-heart' : 'fa fa-heart-o';
+				}
+			});
+	}
+
+	// validateSession
+	function validateSession() {
+		onSessionInvalid();
+		// The request parameters
+		var url = './login';
+		var req = JSON.stringify({});
+
+		// display loading message
+		showLoadingMessage('Validating session...');
+
+		// make AJAX call
+		ajax('GET', url, req,
+			// session is still valid
+			function(res) {
+				var result = JSON.parse(res);
+
+				if (result.status === 'OK') {
+					onSessionValid(result);
+				}
+			}, function() {
+				console.log('login error')
+			});
+	}
+	function onSessionValid(result) {
+		user_id = result.user_id;
+		user_fullname = result.name;
+
+		var loginForm = document.querySelector('#login-form');
+		var registerForm = document.querySelector('#register-form');
+		var itemNav = document.querySelector('#item-nav');
+		var itemList = document.querySelector('#item-list');
+		var avatar = document.querySelector('#avatar');
+		var welcomeMsg = document.querySelector('#welcome-msg');
+		var logoutBtn = document.querySelector('#logout-link');
+
+		welcomeMsg.innerHTML = 'Welcome, ' + user_fullname;
+
+		showElement(itemNav);
+		showElement(itemList);
+		showElement(avatar);
+		showElement(welcomeMsg);
+		showElement(logoutBtn, 'inline-block');
+		hideElement(loginForm);
+		hideElement(registerForm);
+
+		initGeoLocation();
+	}
+	function initGeoLocation() {
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(
+				onPositionUpdated,
+				onLoadPositionFailed, {
+				maximumAge: 60000
+			});
+			showLoadingMessage('Retrieving your location...');
+		} else {
+			onLoadPositionFailed();
+		}
+	}
+	function onPositionUpdated(position) {
+		lat = position.coords.latitude;
+		lng = position.coords.longitude;
+
+		loadNearbyItems();
+	}
+	function onLoadPositionFailed() {
+		console.warn('navigator.geolocation is not available');
+		getLocationFromIP();
+	}
+	function getLocationFromIP() {
+		// get location from http://ipinfo.io/json
+		var url = 'http://ipinfo.io/json'
+		var data = null;
+
+		ajax('GET', url, data, function(res) {
+			var result = JSON.parse(res);
+			if ('loc' in result) {
+				var loc = result.loc.split(',');
+				lat = loc[0];
+				lng = loc[1];
+			} else {
+				console.warn('Getting location by IP failed.');
+			}
+			loadNearbyItems();
+		});
+	}
+	function loadNearbyItems() {
+		console.log('loadNearbyItems');
+		activeBtn('nearby-btn');
+
+		// The request parameters
+		var url = './search';
+		var params = 'user_id=' + user_id + '&lat=' + lat + '&lon=' + lng;
+		var data = null;
+
+		// display loading message
+		showLoadingMessage('Loading nearby items...');
+
+		// make AJAX call
+		ajax('GET', url + '?' + params, data,
+			// successful callback
+			function(res) {
+				var items = JSON.parse(res);
+				if (!items || items.length === 0) {
+					showWarningMessage('No nearby item.');
+				} else {
+					listItems(items);
+				}
+			},
+			// failed callback
+			function() {
+				showErrorMessage('Cannot load nearby items.');
+			}
+		);
+	}
+
+	// addItem
+	function addItem(itemList, item) {
+		var item_id = item.item_id;
+
+		// create the <li> tag and specify the id and class attributes
+		var li = $create('li', {
+			id: 'item-' + item_id,
+			className: 'item'
+		});
+
+		// set the data attribute ex. <li data-item_id="G5vYZ4kxGQVCR" data-favorite="true">
+		li.dataset.item_id = item_id;
+		li.dataset.favorite = item.favorite;
+
+		// item image
+		if (item.image_url) {
+			li.appendChild($create('img', { src: item.image_url }));
+		} else {
+			li.appendChild($create('img', {
+				src: 'https://via.placeholder.com/100'
+			}));
+		}
+		// section
+		var section = $create('div');
+
+		// title
+		var title = $create('a', {
+			className: 'item-name',
+			href: item.url,
+			target: '_blank'
+		});
+		title.innerHTML = item.name;
+		section.appendChild(title);
+
+		// keyword
+		var keyword = $create('p', {
+			className: 'item-keyword'
+		});
+		keyword.innerHTML = 'Keyword: ' + item.keywords.join(', ');
+		section.appendChild(keyword);
+
+		li.appendChild(section);
+
+		// address
+		var address = $create('p', {
+			className: 'item-address'
+		});
+
+		// ',' => '<br/>',  '\"' => ''
+		address.innerHTML = item.address.replace(/,/g, '<br/>').replace(/\"/g, '');
+		li.appendChild(address);
+
+		// favorite link
+		var favLink = $create('p', {
+			className: 'fav-link'
+		});
+
+		favLink.onclick = function() {
+			changeFavoriteItem(item);
+		};
+
+		favLink.appendChild($create('i', {
+			id: 'fav-icon-' + item_id,
+			className: item.favorite ? 'fa fa-heart' : 'fa fa-heart-o'
+		}));
+
+		li.appendChild(favLink);
+		itemList.appendChild(li);
+	}
+	init();
+	
 })();
