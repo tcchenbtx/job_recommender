@@ -10,6 +10,7 @@
 		document.querySelector('#login-btn').addEventListener('click', login);
 		document.querySelector('#nearby-btn').addEventListener('click', loadNearbyItems);
 		document.querySelector('#fav-btn').addEventListener('click', loadFavoriteItems);
+		document.querySelector('#recommend-btn').addEventListener('click', loadRecommendedItems);
 
 
 	}
@@ -270,5 +271,36 @@
 			showErrorMessage('Cannot load favorite items.');
 		});
 	}
+
+	// loadRecommendedItems
+	function loadRecommendedItems() {
+		activeBtn('recommend-btn');
+
+		// request parameters
+		var url = './recommendation' + '?' + 'user_id=' + user_id + '&lat=' + lat + '&lon=' + lng;
+		var data = null;
+
+		// display loading message
+		showLoadingMessage('Loading recommended items...');
+
+		// make AJAX call
+		ajax('GET', url, data,
+			// successful callback
+			function(res) {
+				var items = JSON.parse(res);
+				if (!items || items.length === 0) {
+					showWarningMessage('No recommended item. Make sure you have favorites.');
+				} else {
+					listItems(items);
+				}
+			},
+			// failed callback
+			function() {
+				showErrorMessage('Cannot load recommended items.');
+			}
+		);
+	}
+
+
 
 })();
