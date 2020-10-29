@@ -16,6 +16,14 @@
 	}
 
 	// global helper functions
+	function listItems(items) {
+		var itemList = document.querySelector('#item-list');
+		itemList.innerHTML = ''; // clear current results
+
+		for (var i = 0; i < items.length; i++) {
+			addItem(itemList, items[i]);
+		}
+	}
 	function hideElement(element) {
 		element.style.display = 'none';
 	}
