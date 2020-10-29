@@ -9,6 +9,8 @@
 		document.querySelector('#register-btn').addEventListener('click', register);
 		document.querySelector('#login-btn').addEventListener('click', login);
 		document.querySelector('#nearby-btn').addEventListener('click', loadNearbyItems);
+		document.querySelector('#fav-btn').addEventListener('click', loadFavoriteItems);
+
 
 	}
 
@@ -242,6 +244,31 @@
 				showErrorMessage('Cannot load nearby items.');
 			}
 		);
+	}
+
+	// loadFavoriteItems
+	function loadFavoriteItems() {
+		activeBtn('fav-btn');
+
+		// request parameters
+		var url = './history';
+		var params = 'user_id=' + user_id;
+		var req = JSON.stringify({});
+
+		// display loading message
+		showLoadingMessage('Loading favorite items...');
+
+		// make AJAX call
+		ajax('GET', url + '?' + params, req, function(res) {
+			var items = JSON.parse(res);
+			if (!items || items.length === 0) {
+				showWarningMessage('No favorite item.');
+			} else {
+				listItems(items);
+			}
+		}, function() {
+			showErrorMessage('Cannot load favorite items.');
+		});
 	}
 
 })();
